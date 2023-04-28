@@ -75,6 +75,7 @@ load_default_config() {
   CONFIG_mysql_dump_use_separate_dirs='yes'
   CONFIG_mysql_dump_compression='gzip'
   CONFIG_mysql_dump_commcomp='no'
+  CONFIG_mysql_no_tablespaces='no'
   CONFIG_mysql_dump_latest='no'
   CONFIG_mysql_dump_latest_clean_filenames='no'
   CONFIG_mysql_dump_max_allowed_packet=''
@@ -463,6 +464,10 @@ parse_configuration () {
 	  opt=( "${opt[@]}" '--compress' )
 	  opt_fullschema=( "${opt_fullschema[@]}" '--compress' )
 	  opt_dbstatus=( "${opt_dbstatus[@]}" '--compress' )
+    }
+	[[ "${CONFIG_mysql_no_tablespaces}" = "yes" ]]		&& {
+	  opt=( "${opt[@]}" '--no-tablespaces' )
+	  opt_fullschema=( "${opt_fullschema[@]}" '--no-tablespaces' )
     }
     [[ "${CONFIG_mysql_dump_max_allowed_packet}" ]]		&& {
 	  opt=( "${opt[@]}" "--max_allowed_packet=${CONFIG_mysql_dump_max_allowed_packet}" )
