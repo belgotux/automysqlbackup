@@ -1,6 +1,10 @@
 #=====================================================================
 # Change Log
-#=====================================================================
+#=====================================================================#
+# version 3.0_rc7 - (2023-04-28)
+#     - fix deprecated --ssl
+#     - fix access denied tablespaces
+#     - feature add my.cnf usage and deprecated username/password usage
 #
 # version 3.0_rc4 - (2011-11-24)
 #     - Removing mkfifo commands, thereby improving portability.

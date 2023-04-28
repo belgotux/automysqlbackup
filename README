@@ -142,8 +142,9 @@ CONFIG_rotation_daily=6
 CONFIG_rotation_weekly=35
 CONFIG_rotation_monthly=150
 CONFIG_mysql_dump_usessl='yes'
-CONFIG_mysql_dump_username='root'
+CONFIG_mysql_dump_username=''
 CONFIG_mysql_dump_password=''
+CONFIG_mysql_mycnf_file=''
 CONFIG_mysql_dump_host='localhost'
 CONFIG_mysql_dump_socket=''
 CONFIG_mysql_dump_create_database='no'
@@ -160,6 +161,7 @@ CONFIG_mail_maxattsize=4000
 CONFIG_mail_address='root'
 CONFIG_encrypt='no'
 CONFIG_encrypt_password='password0123'
+CONFIG_mysql_no_tablespaces='no'
 
 !! automysqlbackup (the shell program) accepts one parameter, the filename of a configuration file. The entries in there will supersede all others.
 
