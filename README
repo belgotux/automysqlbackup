@@ -42,6 +42,15 @@ To install it manually (the hard way).
 6. See usage section.
 
 
+.. Minimal Rights for automysql user
+-------------------------
+
+Install the minimal rights on the target servers for automysqlbackup :
+```sql
+CREATE USER 'automysqlbackup'@'localhost' IDENTIFIED BY  '<your_password_secret>';
+GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER,USAGE ON *.* TO 'automysqlbackup'@'localhost' ;
+```
+
 
 .. USAGE
 -------------------------
