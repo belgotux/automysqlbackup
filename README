@@ -171,6 +171,7 @@ CONFIG_mail_address='root'
 CONFIG_encrypt='no'
 CONFIG_encrypt_password='password0123'
 CONFIG_mysql_no_tablespaces='no'
+CONFIG_mysql_column_statistics='no'
 
 !! automysqlbackup (the shell program) accepts one parameter, the filename of a configuration file. The entries in there will supersede all others.
 
@@ -217,3 +218,8 @@ or
 
 NOTE: Make sure you use "<" and not ">" in the above command because you are piping the file.sql to mysql and not the other way around.
 
+.. NEED TO FIX
+------------------------
+
+The actual option `CONFIG_mysql_dump_full_schema` can't be used with MySQL 8. The problem is using the mysqldump option '--all-databases --routines --no-data' on database sys or information_schema. Adding  `--ignore-table=information_schema.* --ignore-table=sys.*` is not enough and it need more investigation.
+I don't use it personnally and and `CONFIG_mysql_dump_full_schema='no'`. I set this option as the default to avoid error for newbe. Fill free to bugfix this.

@@ -77,12 +77,13 @@ load_default_config() {
   CONFIG_mysql_dump_compression='gzip'
   CONFIG_mysql_dump_commcomp='no'
   CONFIG_mysql_no_tablespaces='no'
+  CONFIG_mysql_column_statistics='no'
   CONFIG_mysql_dump_latest='no'
   CONFIG_mysql_dump_latest_clean_filenames='no'
   CONFIG_mysql_dump_max_allowed_packet=''
   CONFIG_mysql_dump_single_transaction='no'
   CONFIG_mysql_dump_master_data=
-  CONFIG_mysql_dump_full_schema='yes'
+  CONFIG_mysql_dump_full_schema='no'
   CONFIG_mysql_dump_dbstatus='yes'
   CONFIG_mysql_dump_differential='no'
   CONFIG_backup_local_files=()
@@ -485,6 +486,10 @@ parse_configuration () {
 	[[ "${CONFIG_mysql_no_tablespaces}" = "yes" ]]		&& {
 	  opt=( "${opt[@]}" '--no-tablespaces' )
 	  opt_fullschema=( "${opt_fullschema[@]}" '--no-tablespaces' )
+    }
+	[[ "${CONFIG_mysql_column_statistics}" = "no" ]]		&& {
+	  opt=( "${opt[@]}" '--column-statistics=0' )
+	  opt_fullschema=( "${opt_fullschema[@]}" '--column-statistics=0' )
     }
     [[ "${CONFIG_mysql_dump_max_allowed_packet}" ]]		&& {
 	  opt=( "${opt[@]}" "--max_allowed_packet=${CONFIG_mysql_dump_max_allowed_packet}" )
