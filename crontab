@@ -1,1 +1,2 @@
-0 23 * * *      root    /usr/local/bin/automysqlbackup /etc/automysqlbackup/myserver.conf
+0 23 * * *   automysqlbackup     /usr/local/bin/automysqlbackup /etc/automysqlbackup/myserver.conf
+0 23 * * 7   automysqlbackup     /usr/local/bin/automysqlbackup_export_grant /etc/automysqlbackup/myserver.conf
