@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+# source automysqlbackup file
+if [[ $# -lt 1 || $# -gt 2 ]] ; then
+    echo "$(basename $0) config.conf [credentials.pt]" 1>&2
+    echo "You need to put the automysqlbackup configuration file in first argument! Find it in automysqlbackup config directory" 1>&2
+    echo "You can put the credentials file as second argument, otherwise same namefile with extention '.pt' is taken" 1>&2
+    exit
+fi
+config_file="$1"
+if [ ! -e "${config_file}" ] ; then
+    echo "The file $config_file doesn't exist!" 1>&2
+    exit
+fi
+source "${config_file}"
+
+if [ $# == 2 ]; then
+    credentials_file="$2"
+else
+    credentials_file="$(dirname ${config_file})/$(basename ${config_file} .conf).pt"
+fi
+if [ ! -e "${credentials_file}" ] ; then
+    echo "The file $credentials_file doesn't exist!" 1>&2
+fi
+
+# check dependances
+which pt-show-grants > /dev/null
+if [ $? != 0 ] ; then
+    echo "Can't find pt-show-grants binary!" 1>&2
+    exit
+fi
+
+if [ -e "${temp_login_file}" ] ; then
+    echo "Error the file $temp_login_file already exist by another program, don't overwrite... Stop here" 1>&2
+    exit
+fi
+
+if [ ! -d "${CONFIG_backup_dir}/grants" ] ; then
+    echo "Create folder ${CONFIG_backup_dir}/grants"
+    mkdir -p "${CONFIG_backup_dir}/grants"
+fi
+
+# pt-show-grants can't use a --default-file option... 
+
+pt-show-grants --config="${credentials_file}" -h "${CONFIG_mysql_dump_host}" > "${CONFIG_backup_dir}/grants/grants_$(date +%Y-%m-%d_%Hh%Mm).sql" && \
+find "${CONFIG_backup_dir}/grants/" -name "*.sql" -mtime +${CONFIG_rotation_weekly} -exec rm {} \;
+result_grant=$?
+
+exit $result_grant

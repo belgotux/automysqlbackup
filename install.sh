@@ -410,6 +410,7 @@ README a220a8732c449b9dd5201d45cb2b5dcf
 LICENSE 39bba7d2cf0ba1036f2a6e2be52fe3f0
 template.conf 8a2b4c05c91e8f5004db1a9a154d35bd
 template.cnf 9130bcad50e6cdcfa596d0a5583e8255
+automysqlbackup_export_grant d96d5a0caf2d00fc86817a20c4320223
 )
 
 n=$(( ${#precheck_files[@]}/2 ))
@@ -472,7 +473,7 @@ echo
 #copying files
 echo "### Copying files."
 echo
-cp -i automysqlbackup.conf LICENSE README template.conf template.cnf "${configdir}"/
+cp -i automysqlbackup.conf LICENSE README template.conf template.cnf automysqlbackup_export_grant "${configdir}"/
 cp -i automysqlbackup.conf "${configdir}"/myserver.conf
 cp -i automysqlbackup "${bindir}"/
 [[ -f "${bindir}"/automysqlbackup ]] && [[ -x "${bindir}"/automysqlbackup ]] || chmod +x "${bindir}"/automysqlbackup || echo " failed - make sure you make the program executable, i.e. run 'chmod +x ${bindir}/automysqlbackup'"

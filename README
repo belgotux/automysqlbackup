@@ -36,7 +36,7 @@ To install the Automysqlbackup the easy way.
 To install it manually (the hard way).
 1. Create the /etc/automysqlbackup directory.
 2. Copy in the automysqlbackup.conf file.
-3. Copy the automysqlbackup file to /usr/local/bin and make executable.
+3. Copy the automysqlbackup and automysqlbackup_export_grant files to /usr/local/bin and make executable.
 4. cp /etc/automysqlbackup/automysqlbackup.conf /etc/automysqlbackup/myserver.conf
 5. Edit the /etc/automysqlbackup/myserver.conf file to customise your settings.
 6. See usage section.
@@ -54,6 +54,8 @@ GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER, USAGE ON *.* TO 'automysql
 
 .. USAGE
 -------------------------
+
+## automysqlbackup
 
 Automysqlbackup can be run a number of ways, you can choose which is best for you.
 
@@ -88,6 +90,14 @@ exists.
 
 You can just copy the supplied automysqlbackup.conf as many times as you want
 and use for separate configurations, i.e. for example different mysql servers.
+
+## automysqlback_export_grant
+
+You can set a hebbo cron in /etc/cron.d/ with this: 
+```
+#m h D M DoM linux_user
+30 3 * * 7   automysqlbackup     /usr/local/bin/automysqlbackup_export_grant /etc/automysqlbackup/yourserver.conf
+```
 
 !!! NEW !!!
 ----------
@@ -131,6 +141,16 @@ choose what you want to be done with/to those files. At the moment the options a
 - create full backup out of differential one
 - remove the differential backup and its Manifest entry.
 
+
+## automysqlbackup_export_grant
+You can export the user GRANT access with the package `percona-toolkit` in Debian only currently.
+You need to specify the automysqlbackup configuration file as first argument.
+You can add a credentials file as second argument. Otherwize the same name is taken, in this example `config.pt`.
+It keeps the same configuration file and keep the weekly rotation rentention. You don't change access every days...
+
+```bash
+automysqlbackup_export_grant config.conf [credentials.pt]
+```
 
 .. CONFIGURATION OPTIONS
 -------------------------
