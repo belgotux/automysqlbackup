@@ -41,6 +41,7 @@ let "E_no_basedir=0x400"
 let "E_config_backupdir_not_writable=0x800"
 let "E_dump_status_failed=0x1000"
 let "E_dump_fullschema_failed=0x2000"
+let "E_ssh_tunnel_failed=0x3000"
 
 let "N_config_file_missing=0x01"
 let "N_arg_conffile_parsed=0x02"
@@ -98,6 +99,11 @@ load_default_config() {
   CONFIG_mail_address='root'
   CONFIG_encrypt='no'
   CONFIG_encrypt_password='password0123'
+  CONFIG_ssh_tunnel='no'
+  CONFIG_ssh_tunnel_port=''
+  CONFIG_ssh_username=''
+  CONFIG_ssh_port=''
+  CONFIG_ssh_key_path=''
 }
 
 # @return:	true, if variable is set; else false
@@ -344,6 +350,7 @@ error_handler () {
     [0x800]="${CONFIG_backup_dir} is not writable. Exiting."
     [0x1000]='Running of mysqlstatus failed.'
     [0x2000]='Running of mysqldump full schema failed.'
+	[0x3000]='Open SSH tunnel failed.'
   )
 
   notify=(
@@ -361,6 +368,7 @@ error_handler () {
     [0x800]=''
     [0x1000]=''
     [0x2000]=''
+	[0x3000]=''
   )
 
   local n
@@ -501,14 +509,22 @@ parse_configuration () {
 	  opt_fullschema=( "${opt_fullschema[@]}" "--socket=${CONFIG_mysql_dump_socket}" )
 	  opt_dbstatus=( "${opt_dbstatus[@]}" "--socket=${CONFIG_mysql_dump_socket}" )
     }
-    [[ "${CONFIG_mysql_dump_port}" ]]			&& {
+    [[ "${CONFIG_mysql_dump_port}" ]] && (( "${CONFIG_ssh_tunnel}" == '' || "${CONFIG_ssh_tunnel}" != 'yes' ))			&& {
 	  opt=( "${opt[@]}" "--port=${CONFIG_mysql_dump_port}" )
 	  mysql_opt=( "${mysql_opt[@]}" "--port=${CONFIG_mysql_dump_port}" )
 	  opt_fullschema=( "${opt_fullschema[@]}" "--port=${CONFIG_mysql_dump_port}" )
 	  opt_dbstatus=( "${opt_dbstatus[@]}" "--port=${CONFIG_mysql_dump_port}" )
     }
-
-
+	# Create random port for ssh tunnel mysql
+	[[ "${CONFIG_ssh_tunnel}" != '' ]] && [[ "${CONFIG_ssh_tunnel}" == 'yes' ]] && [[ "${CONFIG_mysql_dump_host}" != '' ]]			&& {
+	  [[ "${CONFIG_ssh_tunnel_port}" == '' ]] && {
+		CONFIG_ssh_tunnel_port=$(ssh_tunnel_create_random_port)
+	  }
+	  opt=( "${opt[@]}" "--port=${CONFIG_ssh_tunnel_port}" )
+	  mysql_opt=( "${mysql_opt[@]}" "--port=${CONFIG_ssh_tunnel_port}" )
+	  opt_fullschema=( "${opt_fullschema[@]}" "--port=${CONFIG_ssh_tunnel_port}" )
+	  opt_dbstatus=( "${opt_dbstatus[@]}" "--port=${CONFIG_ssh_tunnel_port}" )
+	}
 
 	# Check if --username is necessary (deprecated)
     [[ "${CONFIG_mysql_dump_username}" != '' ]]			&& {
@@ -554,6 +570,7 @@ parse_configuration () {
 	# -> check exclude tables for wildcards
 	local tmp;tmp=()
 	local z;z=0
+	[[ "${CONFIG_ssh_tunnel}" == 'yes' ]] && ssh_tunnel_create "${CONFIG_ssh_tunnel_port}" localhost "${CONFIG_mysql_dump_port}" "${CONFIG_ssh_username}" "${CONFIG_mysql_dump_host}"
 	for i in "${CONFIG_table_exclude[@]}"; do
 	  r='^[^*.]+\.[^.]+$'; [[ "$i" =~ $r ]] || { printf 'The entry %s in CONFIG_table_exclude has a wrong format. Ignoring the entry.' "$i"; continue; }
 	  db=${i%.*}
@@ -561,6 +578,7 @@ parse_configuration () {
 	  r='\*'; [[ "$i" =~ $r ]] || { tmp[z++]="$i"; continue; }
 	  while read -r; do tmp[z++]="${db}.${REPLY}"; done < <(mysql  "${mysql_opt[@]}" --batch --skip-column-names -e "select table_name from information_schema.tables where table_schema='${db}' and table_name like '${table//\*/%}';")
 	done
+	[[ "${CONFIG_ssh_tunnel}" == 'yes' ]] && ssh_tunnel_kill
 	for l in "${tmp[@]}"; do echo "exclude $l";done
 	CONFIG_table_exclude=("${tmp[@]}")
 	# <-
@@ -1488,6 +1506,58 @@ in_array() {
   return 1
 }
 
+# @info: create a random free port to use
+# return (int) the port
+ssh_tunnel_create_random_port() {
+	local port=$((RANDOM + 20000))
+	local quit=0
+	while [ "$quit" -ne 1]; do
+	netstat -a | grep ${port} > /dev/null
+	if [ $? -gt 0 ]; then
+		quit=1
+	else
+		port=`expr $port + 1`
+	fi
+	done
+	echo ${port}
+}
+
+# @info: Function to create an SSH tunnel with random port mapping
+ssh_tunnel_create() {
+  local local_port="$1"
+  local target_host="$2"
+  local target_port="$3"
+  local ssh_user="$4"
+  local ssh_host="$5"
+
+  ssh -N -L "$local_port:$target_host:$target_port" "$ssh_user@$ssh_host" &
+  local returnCode=$?
+  ssh_tunnel_pid=$!
+  let "E |= $E_ssh_tunnel_failed"
+  error_handler
+  #echo "SSH tunnel created with PID: $ssh_tunnel_pid"
+  return ${returnCode}
+}
+
+# Function to kill the previous SSH tunnel
+ssh_tunnel_kill() {
+  if [ -n "$ssh_tunnel_pid" ]; then
+    echo "Killing SSH tunnel with PID: $ssh_tunnel_pid"
+    kill $ssh_tunnel_pid
+    unset ssh_tunnel_pid
+  else
+    echo "No active SSH tunnel found"
+  fi
+}
+
+# Usage example: create SSH tunnel to connect to MySQL server on port 3306
+local_port=$(create_ssh_tunnel "target_server_ip" 3306 "ssh_username" "ssh_server_ip")
+echo "Local opened port: $local_port"
+
+# Usage example: kill the previous SSH tunnel
+kill_ssh_tunnel
+
+
 # @param:	clear(0/1), meta_information, list_value1, list_value2, ...
 extended_select() {
 	local a c k m i r r_number meta_information choice selection do_clear
@@ -1715,6 +1785,8 @@ method_backup () {
 	# BEGIN __PREPARE
 
 	backupfiles=()
+	[[ "${CONFIG_ssh_tunnel}" == 'yes' ]] && ssh_tunnel_create "${CONFIG_ssh_tunnel_port}" localhost "${CONFIG_mysql_dump_port}" "${CONFIG_ssh_username}" "${CONFIG_mysql_dump_host}" && \
+	echo "Create ssh tunnel with port ${CONFIG_ssh_tunnel_port}"
 	parse_databases
 
 	# debug output of variables
@@ -2019,6 +2091,8 @@ method_backup () {
 	echo "======================================================================"
 	# <- finished information
 
+	[[ "${CONFIG_ssh_tunnel}" == 'yes' ]] && ssh_tunnel_kill && echo "Closing ssh connection"
+
 	# -> postbackup commands
 	if [[ "${CONFIG_postbackup}" ]];then
 		echo "======================================================================"
@@ -2029,7 +2103,6 @@ method_backup () {
 		echo "======================================================================"
 	fi
 	# <- postbackup commands
-
 	if [[ -s "$log_errfile" ]];then status=1; else status=0; fi
 
 	exit ${status}

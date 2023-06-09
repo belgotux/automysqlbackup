@@ -162,7 +162,7 @@ The global config file which overwrites the default configuration is located her
 
 Please take a look at the supplied "automysqlbackup.conf" for information about the configuration options.
 
-Default configuration
+## Default configuration
 CONFIG_configfile="/etc/automysqlbackup/automysqlbackup.conf"
 CONFIG_backup_dir='/var/backup/db'
 CONFIG_do_monthly="01"
@@ -192,6 +192,13 @@ CONFIG_encrypt='no'
 CONFIG_encrypt_password='password0123'
 CONFIG_mysql_no_tablespaces='no'
 CONFIG_mysql_column_statistics='no'
+
+## SSH tunnel configuration
+CONFIG_ssh_tunnel='no'
+CONFIG_ssh_tunnel_port=''
+CONFIG_ssh_username=''
+CONFIG_ssh_port=''
+CONFIG_ssh_key_path=''
 
 !! automysqlbackup (the shell program) accepts one parameter, the filename of a configuration file. The entries in there will supersede all others.
 
